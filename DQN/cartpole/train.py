@@ -26,7 +26,7 @@ def add_to_graph(e,r,l):
 plt.ion
 plt.figure()
 plt.show(block=False)
-plt.ylim((0,150))
+
 def draw_graph():
 	x = np.asarray(GRAPH[0])
 	r = np.asarray(GRAPH[1])

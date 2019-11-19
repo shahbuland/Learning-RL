@@ -4,22 +4,27 @@ import torch
 from PIL import Image
 from torchvision import transforms
 from constants import *
+import torch.nn.functional as F
 
 # For testing purposes
 def render_state(s):
-	plt.imshow(s,cmap='gray')
+	s = s.detach().cpu().squeeze().numpy()
+	plt.imshow(s, cmap='gray')
 	plt.show()
 	plt.close()
 
 def prep_state(s):
+	# Move channels to front
 	s = np.moveaxis(s,2,0)
-	s_gray = s[0]+s[1]+s[2]
-	# Down size to 86 x 86 
-	# First convert to PIL image
-	t = transforms.Compose([
-		transforms.ToPILImage(),
-		transforms.Resize((84,84)),
-		transforms.ToTensor()])
-	s_gray = t(s_gray).float() # This adds axis too	
+	# Turn into torch tensor
+	s = torch.from_numpy(s).float()
+	# Normalize:
+	s = s/255
+	# Grayscale:
+	s = (s[0] + s[1] + s[2])/3
+	# Adds channel and minibatch
+	s = s.unsqueeze(0).unsqueeze(0)
+	# Downsize to 84x84
+	s = F.interpolate(s, size = (84,84))
 	
-	return s_gray.cuda() if USE_CUDA else s_gray
+	return s.cuda() if USE_CUDA else s

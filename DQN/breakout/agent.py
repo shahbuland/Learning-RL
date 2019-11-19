@@ -3,13 +3,7 @@ from models import DQN
 import numpy as np
 from torch import nn
 import torch
-
-# Get sublist of A elements i_0 through i_n from L = [i_0 ... i_n]
-def get_sublist(A, L):
-	subL = []
-	for i in L:
-		subL.append(A[i])
-	return subL
+import random
 
 # Exp is [state, action, reward, state_next, done]
 
@@ -23,7 +17,7 @@ class Agent:
 		self.exp_buffer = [] # exp buffer
 		self.exp_number = 0 # size of exp buffer so far
 
-		self.opt = torch.optim.RMSprop(self.model.parameters(), lr=LEARNING_RATE)
+		self.opt = torch.optim.Adam(self.model.parameters(),lr=LEARNING_RATE)
 		self.loss = nn.SmoothL1Loss()
 
 	# Make an action given a state
@@ -55,17 +49,18 @@ class Agent:
 	# Replay gets batch and trains on it
 	def replay(self, batch_size):
 		# If experience buffer isn't right size yet, don't do anything
-		if self.exp_number < MIN_BUFFER_SIZE: return
+		if self.exp_number < MIN_BUFFER_SIZE: return 0
 		# Get batch from experience_buffer
-		batch_ind = list(torch.randint(self.exp_number, (batch_size,)).numpy())
-		batch = get_sublist(self.exp_buffer, batch_ind)
-		q_loss = 0
+		batch = random.sample(self.exp_buffer, batch_size)
+		
+		s,a,r,s_new,_ = zip(*batch)
+		s_new = s_new[:-1] # Remove last
 
 		# First turn batch into something we can run through model
-		s = torch.cat([exp[0] for exp in batch]).unsqueeze(1)
-		a = torch.LongTensor([exp[1] for exp in batch]).unsqueeze(1)
-		r = torch.FloatTensor([exp[2] for exp in batch])
-		s_new = torch.cat([exp[3] for exp in batch][:-1]).unsqueeze(1)
+		s = torch.cat(s)
+		a = torch.LongTensor(a).unsqueeze(1)
+		r = torch.FloatTensor(r)
+		s_new = torch.cat(s_new)
 		
 		if USE_CUDA:
 			a = a.cuda()
@@ -73,7 +68,7 @@ class Agent:
 
 		# Get q vals for s (what model outputted) from a
 		# .gather gets us q value for specific action a
-		pred_q_vals = self.model(s).gather(1,a).squeeze(1)
+		pred_q_vals = self.model(s).gather(1,a).squeeze()
 
 		# Having chosen a in s,
 		# What is the highest possible reward we can get from s_new?
@@ -81,21 +76,24 @@ class Agent:
 		# cat 0 to end for the terminal state
 		s_new_q_vals = self.target(s_new).max(1)[0]
 
-		zero = torch.FloatTensor([0])
+		zero = torch.zeros(1)
 		if USE_CUDA: zero = zero.cuda()
-
 		s_new_q_vals = torch.cat((s_new_q_vals, zero))
 		exp_q_vals = r + s_new_q_vals*GAMMA
 		
-		myloss = nn.functional.smooth_l1_loss(pred_q_vals, exp_q_vals)
+		myloss = self.loss(pred_q_vals, exp_q_vals)
 		self.opt.zero_grad()
 		myloss.backward()
-		for param in self.model.parameters():
-			param.grad.data.clamp_(-1,1) # Weight clipping avoids exploding gradients
-		self.opt.step()
+		
 
+		if WEIGHT_CLIPPING:
+			for param in self.model.parameters():
+				param.grad.data.clamp_(-1,1) # Weight clipping avoids exploding gradients
+
+		self.opt.step()
+		
 		global EPSILON
 		if EPSILON > EPSILON_MIN:
 			EPSILON *= EPSILON_DECAY 
-
+	
 		return myloss.item()

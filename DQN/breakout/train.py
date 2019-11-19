@@ -57,6 +57,7 @@ for e in range(EPISODES):
 	total_r = 0
 	s = env.reset()
 	s = prep_state(s)
+	q_loss = 0
 	for t in range(TIME_LIMIT):
 
 		env.render()
@@ -73,7 +74,7 @@ for e in range(EPISODES):
 	
 		# Train	
 		if not won and (step+1) % TRAINING_INTERVAL == 0:
-			q_loss=agent.replay(32)
+			q_loss+=agent.replay(BATCH_SIZE)
 		if not won and step % TARGET_UPDATE_INTERVAL == 0:
 			agent.target.load_state_dict(agent.model.state_dict())
 		step += 1
@@ -87,6 +88,6 @@ for e in range(EPISODES):
 		print("Agent won!")
 		won = True
 	if not won:
-		print("Episode", e, "| Reward:", total_r, "| Avg Reward:", np.mean(np.asarray(scores)),"| Loss:", q_loss)
+		print("Episode", e, "| Reward:", total_r, "| Avg Reward:", np.mean(np.asarray(scores)),"| Loss:", np.mean(q_loss))
 		add_to_graph(e,total_r,np.mean(np.asarray(scores)), q_loss)	
 		draw_graph()	

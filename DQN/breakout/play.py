@@ -27,7 +27,7 @@ while True:
 
 	for i in range(TIME_LIMIT):
 		
-		time.sleep(SPF)
+	#	time.sleep(SPF)
 		env.render()
 	
 		a = agent.act(s, explore=False)

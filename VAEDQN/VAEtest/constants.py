@@ -1,0 +1,3 @@
+LATENT_DIM = 32
+USE_CUDA = False
+

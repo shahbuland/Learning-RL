@@ -4,6 +4,7 @@ import numpy as np
 from torch import nn
 import torch
 import random
+from ops import init_weights
 
 # Exp is [state, action, reward, state_next, done]
 
@@ -14,6 +15,12 @@ class Agent:
 			self.model.cuda()
 			self.target.cuda()
 
+		# Init weights based on init function
+		self.model.apply(init_weights)
+	
+		# Load model params into target
+		self.target.load_state_dict(self.model.state_dict())
+	
 		self.exp_buffer = [] # exp buffer
 		self.exp_number = 0 # size of exp buffer so far
 

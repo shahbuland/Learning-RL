@@ -58,17 +58,29 @@ for e in range(EPISODES):
 	s = env.reset()
 	s = prep_state(s)
 	q_loss = 0
+	lives = 5
 	for t in range(TIME_LIMIT):
 
 		env.render()
 
 		a = agent.act(s)
 
-		s_new, r, done, _ = env.step(a)
+		s_new, r, done, info = env.step(a)
+		
+		# Punish agent if it loses a life
+		new_lives = info['ale.lives']
+		
+		punishment = 0
+		if new_lives < lives:
+			punishment = LIFE_LOST_PUNISHMENT * (new_lives - lives)
+			lives = new_lives
+
+		# Punishment only passed in replay, total r should measure game score
+		# and is primarily just for monitoring the model
 		total_r += r
 		
 		s_new = prep_state(s_new)
-		agent.add_exp([s, a, r, s_new, done])
+		agent.add_exp([s, a, r+punishment, s_new, done])
 		
 		s = s_new
 	

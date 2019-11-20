@@ -28,3 +28,9 @@ def prep_state(s):
 	s = F.interpolate(s, size = (84,84))
 	
 	return s.cuda() if USE_CUDA else s
+
+# Xavier weight init
+def init_weights(m):
+	if type(m) == torch.nn.Linear or type(m) == torch.nn.Conv2d:
+		torch.nn.init.kaiming_uniform(m.weight)
+		m.bias.data.fill_(0.01)

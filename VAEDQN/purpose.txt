@@ -1,6 +1,0 @@
-The purpose of this folder is to try to combine
-
-Hopefully this will allow me to find a way of making a 
-representation of the game state for the agent to access
-The eventual goal of this is to reproduce the world model paper
-

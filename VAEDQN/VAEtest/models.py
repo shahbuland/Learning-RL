@@ -4,6 +4,10 @@ import torch.nn.functional as F
 import numpy as np
 from constants import *
 
+
+
+# VARIATIONAL AUTOENCODER MODEL:
+
 # Assuming state size is 84
 class Encoder(nn.Module):
 	def __init__(self):
@@ -104,22 +108,22 @@ class Decoder(nn.Module):
 
 		return x
 
-		
-class VAE(nn.Module):
+# REINFORCEMENT LEARNING MODELS
+
+class DQN(nn.Module):
 	def __init__(self):
-		super(VAE, self).__init__()
+		super(DQN, self).__init__()
 		
-		self.E, self.D = Encoder(), Decoder()
-	
-	def encode(self, x):
-		return self.E(x)[2]
-	
-	def decode(self,x):
-		return self.D(x)
+		# We assume the latent vector is the input to the network 
+		self.fc1 = nn.Linear(LATENT_DIM,1024)
+		self.fc2 = nn.Linear(1024, 256)
+		self.fc3 = nn.Linear(256,32)
 
 	def forward(self, x):
-		mu, logvar, z = self.E(x)
-		rec_x = self.D(z)
-
-		return mu, logvar, rec_x
-			
+		x = self.fc1(x) 
+		x = F.relu(x)
+		x = self.fc2(x)
+		x = F.relu(x)
+		x = self.fc3(x)
+		return x
+ 

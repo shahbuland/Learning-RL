@@ -5,13 +5,6 @@ import matplotlib.pyplot as plt
 from constants import *
 import torch.nn.functional as F
 
-def render_state(s):
-	s_np = s.detach().cpu().numpy()
-	s_np = np.squeeze(s_np)
-	plt.imshow(s_np,cmap='gray')
-	plt.show()
-	plt.close()
-
 def prep_state(s):
 	# Move channels to front
 	s = np.moveaxis(s,2,0)
@@ -31,5 +24,5 @@ def prep_state(s):
 # Xavier weight init
 def init_weights(m):
 	if type(m) == torch.nn.Linear or type(m) == torch.nn.Conv2d:
-		torch.nn.init.kaiming_uniform(m.weight)
+		torch.nn.init.kaiming_uniform_(m.weight)
 		m.bias.data.fill_(0.01)

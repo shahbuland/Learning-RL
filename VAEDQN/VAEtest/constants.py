@@ -1,3 +1,30 @@
-LATENT_DIM = 32
-USE_CUDA = False
+# General training stuff
+EPISODES = 1000
+SAVE_INTERVAL = 100 # Save both model and VAE
+LOAD_CHECKPOINT_VAE = False
+LOAD_CHECKPOINT_DQN = False
+EPISODES = 2000
+USE_CUDA = True
 
+# DQN Stuff
+GAMMA = 0.999
+EPSILON = 1
+EPSILON_MIN = 0.05
+EPSILON_DECAY = 0.999
+DQN_LEARNING_RATE = 1e-5
+DQN_BATCH_SIZE = 32
+EXP_BUFFER_MIN = 1000
+EXP_BUFFER_MAX = 10000
+TRAINING_INTERVAL = 4 # Actions between model updates
+TARGET_INTERVAL = 1000 # Actions between target updates
+LIFE_LOST_PUNISHMENT = 1
+
+# VAE Stuff
+LATENT_DIM = 1024
+VAE_LEARNING_RATE = 1e-4
+VAE_BATCH_SIZE = 8
+VAE_UPDATE_INTERVAL = 16 # Actions between VAE updates
+
+# GYM stuff
+env_name = "BreakoutNoFrameskip-v4"
+NUM_ACTIONS = 4

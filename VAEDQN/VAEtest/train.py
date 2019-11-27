@@ -1,58 +1,61 @@
-from models import VAE
 import gym
 from ops import *
 from constants import *
-import random
-from losses import VAE_LOSS
+import rendering
+from vaeagent import Agent
+import torch
 
-model = VAE().cuda() if USE_CUDA else VAE()
-opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+env = gym.make(env_name)
 
-env = gym.make('Pong-v0')
-
+# Rendering stuff
 plt.ion()
-plt.figure()
-plt.show(block = False)
+fig,axs = plt.subplots(2)
+graph = rendering.Graph(4,100)
 
-def render_state(s_rec):
-	plt.pause(0.0001)
-	plt.cla()
-	s_rec = s_rec.cpu().detach().numpy()
-	s_rec = np.squeeze(s_rec)
-	plt.imshow(s_rec,cmap='gray')
-	plt.draw()
+agent = Agent()
+agent.load_params()
 
-state_memory = []
-	
-MAX_SIZE = 10000
-MIN_SIZE = 100
-BATCH_SIZE = 32
-
-while True:
+for e in range(EPISODES):
+	max_r = 0
 	s = env.reset()
+	s = prep_state(s)
+	# Init to 0 so graph doesnt bug out
+	q_loss = 0 
+	v_loss = 0
+	lives = 5
 	while True:
-		s, _, _, _ = env.step(random.randint(0,2))
-		s = prep_state(s)
-		if len(state_memory) >= MAX_SIZE:
-			del state_memory[0]
-
-		state_memory.append(s)
-
+		a = agent.act(s)
+		s_new, r, done, info = env.step(a)
 		
-		if len(state_memory) >= MIN_SIZE:
-			
-			# Viewing
-			s_rec = model.decode(model.encode(s))
-			env.render()
-			render_state(s_rec)
-			
-			# Train vae
-			opt.zero_grad()
-			batch = random.sample(state_memory, BATCH_SIZE)
-			s_batch = torch.cat(batch)
-			output_batch = model(s_batch) # [mu, logvar, rec_x]
-			loss = VAE_LOSS(output_batch, s_batch)
-			loss.backward()
-			opt.step()
-			print(loss.item())  
-				
+		# Punish for lost lives
+		new_lives = info['ale.lives']
+		punishment = 0
+		if new_lives < lives:
+			punsihment = LIFE_LOST_PUNISHMENT * (new_lives - lives)
+			lives = new_lives
+
+		# Punishment only passed in replay, total r is for monitoring
+		max_r = max(r,max_r)
+		s_new = prep_state(s_new)
+		agent.add_exp([s,a,r+punishment,s_new,done])
+		s = s_new
+
+		# Training
+		v_loss, q_loss = agent.replay(DQN_BATCH_SIZE)
+		if done: break
+		
+		# Save weights
+		if (e+1) % SAVE_INTERVAL == 0:
+			agent.save_params()
+		
+		# Add to graph
+		graph.add_data([agent.action_number, q_loss, v_loss/1e5,r,max_r])
+		# Rendering stuff
+		plt.pause(0.0001)
+		# Draw rec state
+		if s is not None:
+			rec_state = agent.vision(s)[2]
+			rendering.render_state(axs[0],rec_state)
+		# Draw graph
+		graph.draw_graph(axs[1])				
+		plt.draw()

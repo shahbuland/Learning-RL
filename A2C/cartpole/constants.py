@@ -1,0 +1,11 @@
+ENV_NAME = 'CartPole-v0'
+GAMMA = 0.9
+ACTION_SIZE = 2
+STATE_SIZE = 4
+EPISODES = 2000
+BATCH_SIZE = 32
+TIME_LIMIT = 500
+CLIP_RANGE = 0.1 # Critic loss clip
+LEARNING_RATE = 1e-4
+USE_CUDA = True
+BETA = 0.01 # Weight attached to entropy

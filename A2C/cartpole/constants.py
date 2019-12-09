@@ -13,3 +13,4 @@ EPISODES = 1000
 # Model hyperparameters:
 LEARNING_RATE = 3e-4
 GAMMA = 0.99
+ENT_WEIGHT = 0.001

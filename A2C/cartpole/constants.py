@@ -9,3 +9,5 @@ CLIP_RANGE = 0.1 # Critic loss clip
 LEARNING_RATE = 1e-4
 USE_CUDA = True
 BETA = 0.01 # Weight attached to entropy
+EXP_BUFFER_MAX = 10000
+EXP_BUFFER_MIN = 32

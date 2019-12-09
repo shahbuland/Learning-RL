@@ -1,13 +1,15 @@
+# Game specific:
+STATE_SIZE = 4 # Linear dim of state
+ACTION_SIZE = 2 # Number of actions we can take
 ENV_NAME = 'CartPole-v0'
-GAMMA = 0.9
-ACTION_SIZE = 2
-STATE_SIZE = 4
-EPISODES = 2000
-BATCH_SIZE = 32
 TIME_LIMIT = 500
-CLIP_RANGE = 0.1 # Critic loss clip
-LEARNING_RATE = 1e-4
+
+# Training:
 USE_CUDA = True
-BETA = 0.01 # Weight attached to entropy
-EXP_BUFFER_MAX = 10000
-EXP_BUFFER_MIN = 32
+BATCH_SIZE = 32
+CLIP_WEIGHTS = True
+EPISODES = 1000
+
+# Model hyperparameters:
+LEARNING_RATE = 3e-4
+GAMMA = 0.99

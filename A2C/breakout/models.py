@@ -9,11 +9,10 @@ class FeatureExtractor(nn.Module):
 		super(FeatureExtractor, self).__init__()
 
 		# Input shape is 1 x 84 x 84
-		self.conv1 = nn.Conv2d(1, 64, 4, 2, 1)
+		self.conv1 = nn.Conv2d(1, 64, 4, 4, 1)
 		self.conv2 = nn.Conv2d(64,128,4,2,1)
 		self.conv3 = nn.Conv2d(128,256,4,2,1)
-		self.conv4 = nn.Conv2d(256,512,4,2,1)
-		# Output shape is 512 x 5 x 5
+		# Output shape is 256 x 5 x 5
 
 	def forward(self, x):
 		x = self.conv1(x)
@@ -21,8 +20,6 @@ class FeatureExtractor(nn.Module):
 		x = self.conv2(x)
 		x = F.relu(x)
 		x = self.conv3(x)
-		x = F.relu(x)
-		x = self.conv4(x)
 		x = F.relu(x)
 		
 		return x
@@ -42,7 +39,7 @@ class Actor(nn.Module):
 		x = self.fc2(x)
 		x = F.relu(x)
 		x = self.fc3(x)
-		x = F.softmax(x)
+		x = F.softmax(x,dim=1)
 		return x
 
 # Critic network (Gets V(a_t | s_t) )

@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from models import Actor, Critic, FeatureExtractor
 from constants import *
+from ops import *
 
 class A3Cagent(nn.Module):
 	def __init__(self):
@@ -17,11 +18,16 @@ class A3Cagent(nn.Module):
 			self.C.cuda()
 			self.FE.cuda()
 
+		# Try loading checkpoints
+		if LOAD_CHECKPOINTS:
+			self.load_weights()
+
 		self.opt = torch.optim.Adam(self.parameters(),lr = LEARNING_RATE)
 
 		self.mem = [[],[],[]] # Stores log_probs, values, rewards during episode
 		self.total_entropy = 0
-
+		self.steps = 0
+		
 	# Adds to memory
 	def remember(self, log_p, v, r):
 		for i,data in enumerate([log_p,v,r]):
@@ -29,13 +35,31 @@ class A3Cagent(nn.Module):
 
 	def forward(self, x):
 		x = self.FE(x)
-		x = x.view(-1, 512*5*5)
+		x = x.view(-1, STATE_SIZE)
 		
 		value = self.C(x)
 		pi = self.A(x)
 
 		return value, pi
+	
+	def save_weights(self):
+		torch.save(self.state_dict(),"params.pt")
 
+	def load_weights(self):
+		try:
+			self.load_state_dict(torch.load("params.pt"))
+			print("Successfully loaded weights")
+		except:
+			print("Could not load past weights")
+
+	# Special case of replay where only calls if step % train interval == 0
+	def step(self, s_last):
+		self.steps += 1
+		if self.steps % SAVE_INTERVAL == 0:
+			self.save_weights()
+		if self.steps % UPDATE_INTERVAL == 0:
+			return self.replay(s_last)
+		 
 	# Requires terminal state val to train
 	def replay(self, s_last):
 		# Load memory

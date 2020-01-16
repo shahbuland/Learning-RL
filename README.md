@@ -9,7 +9,8 @@
 
 # Dependencies:
 
-	Everything in pytorch cause tf sucks
+	pytorch
+	gym[all]
 
 # Roadmap:
 

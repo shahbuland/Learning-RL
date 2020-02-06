@@ -1,8 +1,12 @@
 import torch
 from torch import nn
-import layers as L
 import torch.nn.functional as F
 import numpy as np
+import ops
+from torch.distributions import Normal, Categorical
+
+from constants import *
+import layers as L
 import ops
 
 class ConvNet(nn.Module):
@@ -29,12 +33,15 @@ class ConvNet(nn.Module):
 		self.fc_layers.append(nn.ReLU())
 
 	def forward(self, x):
+		if(torch.min(x) < 0 or torch.max(x) > 1): print("Input error")
 		# Forward through conv layers
 		for conv in self.conv_layers:
 			x = conv(x)
-
+		if ops.isnan(x):
+			print("NAN")
+			assert 1 == 2
 		# Flatten		
-		x = x.view(-1, 64, 7, 7)
+		x = x.view(-1, 64 * 7 * 7)
 
 		# Two dense layers
 		for fc in self.fc_layers:
@@ -62,18 +69,9 @@ class ActorCritic(nn.Module):
 			nn.ReLU(),
 			nn.Linear(448, 1)
 		)
-		
+	
 		# Weight initialization
-		for m in self.modules():
-			if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
-				init.orthogonal_(m.weight, np.sqrt(2))
-				m.bias.data.zero_()
-		
-		init.orthogonal_(self.critic.weight, 0.01)
-		self.critic.bias.data.zero_()
-
-		init.orthogonal_(self.actor.weight, 0.01)
-		self.actor.bias.data.zero_()
+		self.apply(self.init_weights)
 	
 	# Forward pass, returns action probabilities and value of state
 	def forward(self, x):
@@ -86,24 +84,26 @@ class ActorCritic(nn.Module):
 		
 		# Value
 		val = self.critic(x)
-		
-		return act_probs, val
+		# Return distribution as its easier for training
+		return Categorical(act_probs), val 
 
-	# Takes action based on policy
-	def act(self, x):
-		x = self.conv(x)
-		act = self.actor(x)
-		act_probs = F.softmax(act, dim = 1)
-		return ops.sample_from(act_probs)
+	# Weight init
+	def init_weights(self, m):
+		if isinstance(m, nn.Linear):
+			nn.init.normal_(m.weight, mean = 0, std = 0.1)
+			nn.init.constant_(m.bias, 0.1)
+
+		elif isinstance(m, nn.Conv2d):
+			nn.init.xavier_uniform_(m.weight)
 
 	# Basic functionality for loading and saving weights
 	def load_weights(self, path):
 		try:
-			model.load_state_dict(torch.load(path))
+			self.load_state_dict(torch.load(path))
 			print("Weights loaded successfully")
 		except:
 			print("Could not load weights")
 
 	def save_weights(self, path):
-		torch.save(model.state_dict(), path)
+		torch.save(self.state_dict(), path)
 		print("Weights saved")

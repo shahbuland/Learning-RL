@@ -21,7 +21,7 @@ def prep_data(data, targType = "Float"):
 	elif targType == "Long":
 		data = data.long()
 	
-	retrun data.cuda() if USE_CUDA else data
+	return data.cuda() if USE_CUDA else data
 
 # Prep observation as model input
 # Assumes data is direct state output from env
@@ -29,7 +29,10 @@ def prep_obs(data):
 		
 	# Convert to tensor if array
 	if type(data) == np.ndarray:
+		data = np.moveaxis(data, 2,0)
 		data = torch.from_numpy(data)
+	
+	data = data.float()
 	
 	# Get a mini-batch dimension if we need it
 	if len(list(data.shape)) == 3: data = data.unsqueeze(0)
@@ -37,7 +40,7 @@ def prep_obs(data):
 	# resize
 	data = F.interpolate(data, size=(IMAGE_SIZE, IMAGE_SIZE))
 
-	data = data.float() * (1/255)
+	data = data * (1/255)
 	return data.cuda() if USE_CUDA else data
 
 # Gets tensor from list of tensors
@@ -58,4 +61,28 @@ def list_to_Tensor(L):
 def sample_from(prob):
 	dist = Categorical(prob)
 	return dist.sample().item()
-	
+
+# make mask for GAE
+def makeMask(done):
+	mask = torch.FloatTensor([1 - done]).unsqueeze(1)
+	if USE_CUDA: mask = mask.cuda()
+	return mask
+
+# Get general advantage estimate
+# Needs next value, rewards, masks, values
+def get_GAE(next_v, r, m, v):
+	v = v + [next_v]
+	gae = 0
+	returns = []
+	# Iterate backwards through rollout
+	for t in reversed(range(len(r))):
+		delta = r[t] + GAMMA * v[t + 1] * m[t] - v[t]
+		gae = delta + GAMMA * TAU * m[t] * gae
+		# Since we are iterating backwards, we have to reverse again
+		# to get the returns in right order
+		returns.insert(0, gae + v[t])
+	return returns
+
+# check if x contains any nan values
+def isnan(x):
+	return torch.max(x != x)

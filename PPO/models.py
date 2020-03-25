@@ -33,13 +33,11 @@ class ConvNet(nn.Module):
 		self.fc_layers.append(nn.ReLU())
 
 	def forward(self, x):
-		if(torch.min(x) < 0 or torch.max(x) > 1): print("Input error")
+		if(torch.min(x) < 0 or torch.max(x) > 1): 
+			print("Warning: input not normalized")
 		# Forward through conv layers
 		for conv in self.conv_layers:
 			x = conv(x)
-		if ops.isnan(x):
-			print("NAN")
-			assert 1 == 2
 		# Flatten		
 		x = x.view(-1, 64 * 7 * 7)
 
@@ -50,22 +48,27 @@ class ConvNet(nn.Module):
 		return x
 
 class ActorCritic(nn.Module):
-	def __init__(self):
+	def __init__(self, use_conv = True, input_size = None):
 		super(ActorCritic, self).__init__()
+		self.use_conv = use_conv
 
 		# Initialize conv layers, then actor and critic layers
-		self.conv = ConvNet()
+		if self.use_conv:
+			self.conv = ConvNet()
 
+		# Size of input to FC layers
+		input_size = 448 if input_size is None else input_size
+		
 		# Actor
 		self.actor = nn.Sequential(
-			nn.Linear(448, 448),
+			nn.Linear(448 if input_size is None else input_size, 448),
 			nn.ReLU(),
 			nn.Linear(448, OUTPUT_SIZE)
 		)
 
 		# Critic
 		self.critic = nn.Sequential(
-			nn.Linear(448, 448),
+			nn.Linear(448 if input_size is None else input_size, 448),
 			nn.ReLU(),
 			nn.Linear(448, 1)
 		)
@@ -76,11 +79,11 @@ class ActorCritic(nn.Module):
 	# Forward pass, returns action probabilities and value of state
 	def forward(self, x):
 		# Get features
-		x = self.conv(x)
+		if self.use_conv: x = self.conv(x)
 
 		# Actions
 		act = self.actor(x)
-		act_probs = F.softmax(act, dim = 1)
+		act_probs = F.softmax(act, dim = 0)
 		
 		# Value
 		val = self.critic(x)

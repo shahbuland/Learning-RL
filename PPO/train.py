@@ -26,9 +26,12 @@ def train_PPO(model, optimizer, rollout_store):
 	
 	# Get advantages from returns and values
 	adv_batch = returns_batch - val_batch
+	# Normalize
+	adv_batch = (adv_batch - adv_batch.mean()) / (adv_batch.std()) + 1e-8
 
 	size = len(state_batch)
-
+	total_loss = 0
+	
 	for EPOCH in range(EPOCHS_PER_TRAIN):
 		# Shuffle indices
 		full_ind = torch.randint(0, size, (size,))
@@ -73,6 +76,9 @@ def train_PPO(model, optimizer, rollout_store):
 			# gradient clipping
 			nn.utils.clip_grad_norm_(model.parameters(), CLIP_VAL)
 			optimizer.step()
+			total_loss += loss.item()
+
+		return total_loss
 
 # Train ppo on environment provided
 def train_on_env(env_name, model, episodes, rollout_length):
@@ -81,11 +87,11 @@ def train_on_env(env_name, model, episodes, rollout_length):
 	
 	RS = RolloutStore()
 	opt = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
+	TOTAL_FRAMES = 0
 	for EPISODE in range(episodes):
 		s = ops.prep_obs(env.reset())
 		done = False
 		frame = 0 # frame we are on 
-
 		total_r = 0 # Worth tracking
 
 		while frame < MAX_FRAMES and not done:
@@ -126,7 +132,9 @@ def train_on_env(env_name, model, episodes, rollout_length):
 			# Update rollout store's rewards with returns from GAE
 			_, next_v = model(s_next)
 			RS.update_gae(next_v)	
-			train_PPO(model, opt, RS)
+			loss = train_PPO(model, opt, RS)
+			print(loss)
 		if EPISODE % 10 == 0:
-			model.save_weights("firstrun.pt")	
-		print("Episode", EPISODE, " | Reward:", total_r)
+			model.save_weights("firstrun.pt")
+		TOTAL_FRAMES+=NUM_STEPS	
+		print("Steps", TOTAL_FRAMES, " | Reward:", total_r)

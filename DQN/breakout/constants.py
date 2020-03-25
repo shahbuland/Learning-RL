@@ -5,11 +5,11 @@ NUM_ACTIONS = 4 # Number of actions agent could take
 
 GAMMA = 0.99 # Decay for bellman equation
 EPSILON = 1 # Initial chance to act randomly
-EPSILON_DECAY = 0.999 # Decay for epsilon
+EPSILON_DECAY = 0.8 # Decay for epsilon
 EPSILON_MIN = 0.05 # Min val for epsilon
-LEARNING_RATE = 0.00001
+LEARNING_RATE = 0.01
 
-BATCH_SIZE = 32
+BATCH_SIZE = 4
 TRAINING_INTERVAL = 4 # Step interval for training
 TARGET_UPDATE_INTERVAL = 1000 # Step interval for updating target
 
@@ -21,6 +21,6 @@ CHECKPOINT_INTERVAL = 10 # Interval on which to take checkpoints
 LOAD_CHECKPOINTS = True
 
 ENV_NAME = 'BreakoutNoFrameskip-v4'
-USE_CUDA = True
+USE_CUDA = False
 WEIGHT_CLIPPING = True
 

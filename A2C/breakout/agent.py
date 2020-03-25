@@ -6,23 +6,19 @@ from models import Actor, Critic, FeatureExtractor
 from constants import *
 from ops import *
 
-class A3Cagent(nn.Module):
+class A2Cagent(nn.Module):
 	def __init__(self):
 		super(A3Cagent,self).__init__()
+
+		self.Conv = FeatureExtractor()
 	
-		self.FE = FeatureExtractor()
 		self.A, self.C = Actor(), Critic()
 		
-		if USE_CUDA:
-			self.A.cuda()
-			self.C.cuda()
-			self.FE.cuda()
-
 		# Try loading checkpoints
 		if LOAD_CHECKPOINTS:
 			self.load_weights()
 
-		self.opt = torch.optim.Adam(self.parameters(),lr = LEARNING_RATE)
+		self.opt = torch.optim.RMSprop(self.parameters(),lr = LEARNING_RATE)
 
 		self.mem = [[],[],[]] # Stores log_probs, values, rewards during episode
 		self.total_entropy = 0
@@ -34,9 +30,9 @@ class A3Cagent(nn.Module):
 			self.mem[i].append(data)
 
 	def forward(self, x):
-		x = self.FE(x)
-		x = x.view(-1, STATE_SIZE)
-		
+		x = self.Conv(x)
+		x = x.view(-1,STATE_SIZE)
+	
 		value = self.C(x)
 		pi = self.A(x)
 
@@ -93,6 +89,12 @@ class A3Cagent(nn.Module):
 		
 		self.opt.zero_grad()
 		ac_loss.backward()
+
+		if CLIP_WEIGHTS:
+			for param in self.parameters():
+				if param.grad is not None:
+					param.grad.data.clamp_(-1,1)	
+	
 		self.opt.step()
  			
 		# Clear memory after training step

@@ -26,7 +26,15 @@ def prep_data(data, targType = "Float"):
 # Prep observation as model input
 # Assumes data is direct state output from env
 def prep_obs(data):
-		
+
+	# In case input isn't meant to be image
+	if not INPUT_IMAGE:
+		data = torch.Tensor(data).float()
+		if USE_CUDA: 
+			return data.cuda()
+		else:
+			return data
+
 	# Convert to tensor if array
 	if type(data) == np.ndarray:
 		data = np.moveaxis(data, 2,0)
@@ -41,6 +49,13 @@ def prep_obs(data):
 	data = F.interpolate(data, size=(IMAGE_SIZE, IMAGE_SIZE))
 
 	data = data * (1/255)
+	
+	# Grayscale
+	if CHANNELS == 1:
+		data = data[:,0,:,:] + data[:,1,:,:] + data[:,2,:,:]
+		data = data/3
+		data = data.unsqueeze(1)
+
 	return data.cuda() if USE_CUDA else data
 
 # Gets tensor from list of tensors

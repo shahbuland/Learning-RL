@@ -66,7 +66,6 @@ for e in range(EPISODES):
 		a = agent.act(s)
 
 		s_new, r, done, info = env.step(a)
-		
 		# Punish agent if it loses a life
 		new_lives = info['ale.lives']
 		
@@ -80,7 +79,7 @@ for e in range(EPISODES):
 		total_r += r
 		
 		s_new = prep_state(s_new)
-		agent.add_exp([s, a, r+punishment, s_new, done])
+		agent.add_exp([s, a, 1 if a == 2 else -1, s_new, done])
 		
 		s = s_new
 	

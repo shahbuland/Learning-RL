@@ -7,8 +7,7 @@ import numpy as np
 # I separated it from the main training loop as it brings too much clutter
 # into it otherwise
 
-# Used with reconstructed state
-# Shows us how good the agents embedding is so far
+# Goes back to image from internal representation of state
 def render_state(axs,s_rec):
 	axs.cla()
 	s_rec = s_rec.cpu().detach().numpy()

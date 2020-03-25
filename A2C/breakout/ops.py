@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
+
 # For testing purposes
 def render_state(s):
 	s = s.detach().cpu().squeeze().numpy()
@@ -12,19 +13,20 @@ def render_state(s):
 	plt.close()
 
 def prep_state(s):
+	# Crop out top segment and bottom segment
+	if CROP: s = s[TOP_BORDER:-1*BOTTOM_BORDER]
 	# Move channels to front
 	s = np.moveaxis(s,2,0)
 	# Turn into torch tensor
 	s = torch.from_numpy(s).float()
-	# Normalize:
-	s = s/255
 	# Grayscale:
 	s = (s[0] + s[1] + s[2])/3
 	# Adds channel and minibatch
 	s = s.unsqueeze(0).unsqueeze(0)
 	# Downsize to 84x84
 	s = F.interpolate(s, size = (84,84))
-	
+	# Normalize
+	s = s/255
 	return s.cuda() if USE_CUDA else s
 
 # Xavier weight init
